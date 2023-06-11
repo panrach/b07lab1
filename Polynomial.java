@@ -1,5 +1,11 @@
 package my_package;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.PrintStream;
+
 public class Polynomial
 {
 	double[] nz_coef;
@@ -27,7 +33,6 @@ public class Polynomial
 				exp[i] = i;
 			}
 		}
-		//System.out.println("length: " + nz_coef.length);
 		expanded = want_expanded;
 	}
 	
@@ -48,11 +53,77 @@ public class Polynomial
 			nz_coef[i] = new_coefficients[i];
 			exp[i] = new_exp[i];
 		}
-		//System.out.println("length: " + nz_coef.length);
 		expanded = false;
 	}
 	
-	public void print(String name)
+	public Polynomial (File f) throws Exception
+	{
+		// convert the file to a string
+		// go through the string
+		// 
+		BufferedReader input = new BufferedReader(new FileReader(f));
+		String f_string = input.readLine();
+		
+		if (f_string.isEmpty())
+		{
+			return;
+		}
+		
+		String[] terms = f_string.split("(?=[+-])");
+		nz_coef = new double[terms.length];
+		exp = new int[terms.length];
+		
+		for (int i = 0; i < terms.length; i++)
+		{
+			String[] term_subarray = terms[i].split("x");
+			double coefficient = Double.parseDouble(term_subarray[0]);
+			int exponent = 0;
+			
+			if (term_subarray.length != 1)
+			{
+				exponent = Integer.parseInt(term_subarray[1]);
+			}
+			
+			nz_coef[i] = coefficient;
+			exp[i] = exponent;
+		}
+	}
+	
+	void SaveToFile(String f_name) throws FileNotFoundException
+	{
+		PrintStream dest = new PrintStream(f_name);
+		String s = "";
+		
+		for (int i = 0; i < this.size(); i++)
+		{
+			if (nz_coef[i] > 0 && i > 0)
+			{
+				s += "+";
+				s += nz_coef[i];
+				
+			}
+			else
+			{
+				s += "-";
+				s += nz_coef[i];
+			}
+			
+			if (exp[i] > 0)
+			{
+				s += "x";
+			}
+			
+			if (exp[i] >= 2)
+			{
+				s += exp[i];
+			}
+		}
+		
+		dest.print(s);
+		dest.close();
+	}
+
+	public void print(String name)throws Exception
 	{
 		int ln = this.size();
 		System.out.println("name: " + name + "(");
@@ -62,6 +133,7 @@ public class Polynomial
 		}
 		System.out.println(")");
 	}
+	
 	private int max_degree(Polynomial poly, int size)
 	{
 		int max = 0;
@@ -81,16 +153,11 @@ public class Polynomial
 		// the size of the new polynomial arrays is going to be the max degree + 1
 		int new_len = max_degree(this, old_len) + 1;
 		
-		
-		System.out.println("old len: " + old_len);
-		System.out.println("new len: " + new_len);
-		
 		if (this.expanded)
 		{
 			return;
 		}
 		
-		//this.print("before expand");
 		double coef[] = new double[new_len];
 		int deg[] = new int[new_len];
 		
@@ -104,7 +171,6 @@ public class Polynomial
 		}
 		this.nz_coef = coef;
 		this.exp = deg;
-		//this.print("after expand");
 	}
 	
 	public void shrink()
@@ -166,21 +232,15 @@ public class Polynomial
 				deg[count] = i;
 				count++;
 			}
-			//System.out.println("Sum: " + coef[i] + " degree: " + exp[i]);
-			//System.out.println("add_ghetto: Sum: " + sum);
 		}
-		//this.print("add_ghetto 2: ");
 		if (expanded)
 		{
 			Polynomial result = new Polynomial(coef, deg);
-			result.print("result: ");
 			return (result);
 		}
 		else
 		{
-			//System.out.println("Polynomial is not expanded");
 			Polynomial result = new Polynomial(coef, deg, count);
-			result.print("result: ");
 			return (result);
 		}
 	}
@@ -212,15 +272,8 @@ public class Polynomial
 		 * adding the coefficients: [6, 8, 8, 0, 6]
 		 * degrees: [0, 1, 2, 3, 4]
 		 */
-		
-		this.print("before expand this: ");
-		other.print("before expand other: ");
-		
 		this.expand();
 		other.expand();
-		
-		this.print("this: ");
-		other.print("other: ");
 		
 		int this_lth = this.size();
 		int other_lth = other.size(); 
@@ -255,7 +308,6 @@ public class Polynomial
 	
 	private Polynomial multiply(double coef, int deg)
 	{
-		System.out.println("multiply coef: " + coef + "deg: " + deg);
 		int len = this.size();
 		Polynomial poly = new Polynomial(len, false);
 		
@@ -264,7 +316,6 @@ public class Polynomial
 			poly.nz_coef[i] = coef * this.nz_coef[i];
 			poly.exp[i] = deg + this.exp[i];
 		}
-		poly.print("product: ");
 		return poly;
 	}
 	
@@ -292,9 +343,7 @@ public class Polynomial
 		for (int i = 0; i < other_ln; i++)
 		{
 			Polynomial product = multiply(poly.nz_coef[i], poly.exp[i]);
-			//product.print("product: ");
 			result = result.add(product);
-			result.print("after adding: ");
 		}
 		
 		result.shrink();
